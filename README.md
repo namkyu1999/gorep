@@ -1,1 +1,1 @@
-TBD
+### Checkout [Post](https://namkyu1999.github.io/posts/from-scratch/230211_linux_command_from_scratch_1/)
