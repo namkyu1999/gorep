@@ -7,6 +7,11 @@ import (
 	"sync"
 )
 
+// 1. result handler 고루틴 처리
+// 2. 여러 파일 search 시 고루틴 처리
+// 3. search 부분 chunk 시켜서 고루틴 처리
+// 4. count 에도 적용
+
 func main() {
 	config, err := setup()
 	if err != nil {
@@ -15,12 +20,13 @@ func main() {
 	}
 
 	resultsChannel := make(chan *Result)
-	wg := sync.WaitGroup{}
+	resultHandler := NewResultHandler(config.count)
 
-	wg.Add(1)
-	go resultHandler(resultsChannel, &wg)
+	resultWaitGroup := sync.WaitGroup{}
+	resultWaitGroup.Add(1)
 
-	//TODO: 다 끝나면 resultsChannel 닫아 줘야 한다.
+	go resultHandler.handle(resultsChannel, &resultWaitGroup)
+
 	if config.dereferenceRecursive {
 		paths := make([]string, 0)
 		err := filepath.Walk(config.fileName[0],
@@ -40,15 +46,14 @@ func main() {
 		config.fileName = paths
 	}
 
-	if printPrefix := len(config.fileName) > 1; config.count {
-		for _, fileName := range config.fileName {
-			searchCount(fileName, config.pattern, printPrefix)
-		}
-	} else {
-		for _, fileName := range config.fileName {
-			search(fileName, config.pattern, resultsChannel)
-		}
+	fileWaitGroup := sync.WaitGroup{}
+	for _, fileName := range config.fileName {
+		fileWaitGroup.Add(1)
+		go search(fileName, config.pattern, resultsChannel, &fileWaitGroup)
 	}
+	fileWaitGroup.Wait()
+
 	close(resultsChannel)
-	wg.Wait()
+
+	resultWaitGroup.Wait()
 }
