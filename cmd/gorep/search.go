@@ -13,7 +13,8 @@ const errorWhileReadFile = "Error while reading file: %s"
 const searchResultTemplate = "%s:%d|%s\n"
 const countResultTemplate = "%s:%d\n"
 
-func search(filename, pattern string, printPrefix bool) {
+// TODO: 하나의 파일 안에서도 청크 단위로 리팩토링
+func search(filename, pattern string, resultsChannel chan *Result) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatalf(cannotReadFile, err)
@@ -23,18 +24,18 @@ func search(filename, pattern string, printPrefix bool) {
 	fileScanner := bufio.NewScanner(file)
 
 	lineNumber := 0
+	result := &Result{
+		fileName: file.Name(),
+		matches:  make([]Match, 0),
+	}
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
-
 		if index := strings.Index(line, pattern); index > -1 {
-			if printPrefix {
-				fmt.Printf(searchResultTemplate, file.Name(), lineNumber, line)
-			} else {
-				fmt.Println(line)
-			}
+			result.matches = append(result.matches, Match{lineNumber: lineNumber, line: line})
 		}
 		lineNumber++
 	}
+	resultsChannel <- result
 	if err := fileScanner.Err(); err != nil {
 		log.Fatalf(errorWhileReadFile, err)
 	}

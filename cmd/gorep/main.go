@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 func main() {
@@ -13,6 +14,13 @@ func main() {
 		os.Exit(2)
 	}
 
+	resultsChannel := make(chan *Result)
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go resultHandler(resultsChannel, &wg)
+
+	//TODO: 다 끝나면 resultsChannel 닫아 줘야 한다.
 	if config.dereferenceRecursive {
 		paths := make([]string, 0)
 		err := filepath.Walk(config.fileName[0],
@@ -38,7 +46,9 @@ func main() {
 		}
 	} else {
 		for _, fileName := range config.fileName {
-			search(fileName, config.pattern, printPrefix)
+			search(fileName, config.pattern, resultsChannel)
 		}
 	}
+	close(resultsChannel)
+	wg.Wait()
 }
