@@ -5,14 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
-// 1. result handler 고루틴 처리
-// 2. 여러 파일 search 시 고루틴 처리
-// 3. search 부분 chunk 시켜서 고루틴 처리
-// 4. count 에도 적용
-
 func main() {
+	now := time.Now()
 	config, err := setup()
 	if err != nil {
 		fmt.Errorf(err.Error())
@@ -56,4 +53,5 @@ func main() {
 	close(resultsChannel)
 
 	resultWaitGroup.Wait()
+	fmt.Println("\nTime taken - ", time.Since(now))
 }

@@ -6,6 +6,9 @@ import (
 	"sync"
 )
 
+const normalResultFormat = "%s:%d|%s\n"
+const countResultFormat = "%s|%d\n"
+
 type Result struct {
 	fileName string
 	matches  []Match
@@ -30,7 +33,7 @@ func (n NormalResultHandler) handle(results chan *Result, wg *sync.WaitGroup) {
 		})
 
 		for _, match := range result.matches {
-			fmt.Printf("%s:%d|%s\n", result.fileName, match.lineNumber+1, match.line)
+			fmt.Printf(normalResultFormat, result.fileName, match.lineNumber+1, match.line)
 		}
 	}
 }
@@ -41,7 +44,7 @@ func (c CountResultHandler) handle(results chan *Result, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for result := range results {
 		count := len(result.matches)
-		fmt.Printf("%s|%d\n", result.fileName, count)
+		fmt.Printf(countResultFormat, result.fileName, count)
 	}
 }
 
